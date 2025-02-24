@@ -120,7 +120,29 @@ app.MapPost("/integracoes/reprocessar", async ([FromQuery] string? dataInicio, [
         return Results.BadRequest(new { Erro = "Falha ao iniciar o reprocessamento", Detalhes = ex.Message });
     }
 });
+// 🔹 Adicionar o loop para reprocessamento a cada 5 segundos
+async Task ReprocessarPeriodicamente()
+{
+    while (true)
+    {
+        try
+        {
+            // Chama o reprocessamento a cada 5 segundos
+            await app.Services.GetRequiredService<IDynamoDbService>().ReprocessarConsolidado(null, null);
+            Console.WriteLine("Reprocessamento executado a cada 5 segundos...");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro no reprocessamento: {ex.Message}");
+        }
+        
+        // Aguarda 5 segundos antes de rodar o próximo ciclo
+        await Task.Delay(5000);
+    }
+}
 
+// Inicia o loop de reprocessamento
+_ = Task.Run(ReprocessarPeriodicamente);
 // 🔹 Executa a aplicação
 await app.RunAsync();
 
